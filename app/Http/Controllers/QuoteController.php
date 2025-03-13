@@ -35,7 +35,7 @@ class QuoteController extends Controller
             'author' => 'nullable|string|max:255',
         ]);
         
-        // Calculate the word length
+        // Calculate the word lengthcount
         $validated['length'] = str_word_count($validated['content']);
         $validated['popularity_count'] = 0;
         
@@ -88,9 +88,18 @@ class QuoteController extends Controller
      */
     public function random(Request $request)
     {
-        $count = $request->input('count', 1);
-        $quotes = Quote::inRandomOrder()->limit($count)->get();
-        return response()->json($quotes);
+        try {
+            $count = $request->input('count', 1);
+            $quotes = Quote::inRandomOrder()->limit($count)->get();
+            
+            if ($quotes->isEmpty()) {
+                return response()->json(['message' => 'No quotes found'], 404);
+            }
+            
+            return response()->json($quotes);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**
