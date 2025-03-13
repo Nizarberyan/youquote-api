@@ -11,7 +11,8 @@ class UpdateQuoteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // Change to true to allow the request to proceed
+        return true;
     }
 
     /**
@@ -22,7 +23,22 @@ class UpdateQuoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'content' => 'sometimes|required|string|min:3',
+            'author' => 'nullable|string|max:255',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array
+     */
+    public function messages(): array
+    {
+        return [
+            'content.required' => 'A quote content is required',
+            'content.min' => 'Quote content must be at least 3 characters',
+            'author.max' => 'Author name cannot be more than 255 characters',
         ];
     }
 }

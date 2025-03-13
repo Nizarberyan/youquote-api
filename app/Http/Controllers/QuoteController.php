@@ -2,40 +2,64 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreQuoteRequest;
+use App\Http\Requests\UpdateQuoteRequest;
 use App\Models\Quote;
+use Illuminate\Http\Request;
 
 class QuoteController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
     {
-        $query = Quote::query();
-    
-        if ($request->has('min_length')) {
-            $query->where('length', '>=', $request->min_length);
-        }
+        try {
+            $query = Quote::query();
+            
+            // Filter by minimum length
+            if ($request->has('min_length')) {
+                $minLength = $request->min_length;
+                
+                if (!is_numeric($minLength) || $minLength < 0) {
+                    return response()->json(['error' => 'min_length must be a non-negative number'], 400);
+                }
+                
+                $query->where('length', '>=', $minLength);
+            }
+            
+            // Filter by maximum length
+            if ($request->has('max_length')) {
+                $maxLength = $request->max_length;
+                
+                if (!is_numeric($maxLength) || $maxLength < 0) {
+                    return response()->json(['error' => 'max_length must be a non-negative number'], 400);
+                }
+                
+                $query->where('length', '<=', $maxLength);
+            }
+            
+            // Add pagination
+            $perPage = $request->input('per_page', 15);
+                return response()->json($query->get());
         
-        if ($request->has('max_length')) {
-            $query->where('length', '<=', $request->max_length);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-        
-        return response()->json($query->get());
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreQuoteRequest $request)
     {
-        $validated = $request->validate([
-            'content' => 'required|string|min:3',
-            'author' => 'nullable|string|max:255',
-        ]);
+        // The request is already validated thanks to StoreQuoteRequest
+        $validated = $request->validated();
         
-        // Calculate the word lengthcount
+        // Calculate the word length
         $validated['length'] = str_word_count($validated['content']);
         $validated['popularity_count'] = 0;
         
@@ -56,12 +80,10 @@ class QuoteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Quote $quote)
+    public function update(UpdateQuoteRequest $request, Quote $quote)
     {
-        $validated = $request->validate([
-            'content' => 'sometimes|required|string|min:3',
-            'author' => 'nullable|string|max:255',
-        ]);
+        // The request is already validated thanks to UpdateQuoteRequest
+        $validated = $request->validated();
         
         // If content was updated, recalculate length
         if (isset($validated['content'])) {
@@ -90,6 +112,11 @@ class QuoteController extends Controller
     {
         try {
             $count = $request->input('count', 1);
+         
+            if (!is_numeric($count) || $count < 1) {
+                return response()->json(['error' => 'Count must be a positive number'], 400);
+            }
+            
             $quotes = Quote::inRandomOrder()->limit($count)->get();
             
             if ($quotes->isEmpty()) {
