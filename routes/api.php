@@ -27,7 +27,7 @@ Route::get('quotes/popular', [QuoteController::class, 'popular'])->name('quotes.
 Route::get('quotes/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
 
 // Protected Quote routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'json.response'])->group(function () {
     // Create, update, delete operations should be protected
     Route::post('quotes', [QuoteController::class, 'store'])->name('quotes.store');
     Route::put('quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
