@@ -45,11 +45,16 @@ class AuthController extends Controller
             'role' => 'user', // Default role
         ]);
     
+        // Generate a token
         $token = $user->createToken('auth_token')->plainTextToken;
+    
+        // Send verification email
+        $user->sendEmailVerificationNotification();
     
         return response()->json([
             'user' => $user,
             'token' => $token,
+            'message' => 'Registration successful. Please check your email to verify your account.'
         ], 201);
     }
 
@@ -89,9 +94,14 @@ class AuthController extends Controller
         $user = $request->user();
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Check if email is verified
+        $isVerified = $user->hasVerifiedEmail();
+
         return response()->json([
             'user' => $user,
-            'token' => $token
+            'token' => $token,
+            'email_verified' => $isVerified,
+            'message' => $isVerified ? 'Login successful' : 'Login successful. Please verify your email to access all features.'
         ]);
     }
 
