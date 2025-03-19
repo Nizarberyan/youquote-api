@@ -6,9 +6,18 @@ use App\Http\Requests\StoreQuoteRequest;
 use App\Http\Requests\UpdateQuoteRequest;
 use App\Models\Quote;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class QuoteController extends Controller
 {
+    public function __construct()
+    {
+        // Apply authorization to certain methods
+        $this->authorizeResource(Quote::class, 'quote', [
+            'except' => ['index', 'show', 'random', 'popular']
+        ]);
+    }
+    
     /**
      * Display a listing of the resource.
      *
@@ -58,15 +67,19 @@ class QuoteController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param  \App\Http\Requests\StoreQuoteRequest  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(StoreQuoteRequest $request)
     {
-        // The request is already validated thanks to StoreQuoteRequest
+        // Authorization is handled by the controller constructor
         $validated = $request->validated();
         
         // Calculate the word length
         $validated['length'] = str_word_count($validated['content']);
         $validated['popularity_count'] = 0;
+        $validated['user_id'] = auth()->id(); // Assign the quote to the current user
         
         $quote = Quote::create($validated);
         
@@ -84,10 +97,14 @@ class QuoteController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * @param  \App\Http\Requests\UpdateQuoteRequest  $request
+     * @param  \App\Models\Quote  $quote
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(UpdateQuoteRequest $request, Quote $quote)
     {
-        // The request is already validated thanks to UpdateQuoteRequest
+        // Authorization is handled by the controller constructor
         $validated = $request->validated();
         
         // If content was updated, recalculate length
@@ -105,6 +122,8 @@ class QuoteController extends Controller
      */
     public function destroy(Quote $quote)
     {
+        // Authorization handled by the controller constructor
+        
         $quote->delete();
         
         return response()->json(null, 204);
@@ -144,5 +163,52 @@ class QuoteController extends Controller
                        ->limit($limit)
                        ->get();
         return response()->json($quotes);
+    }
+
+    /**
+     * Like a quote.
+     *
+     * @param  \App\Models\Quote  $quote
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function like(Quote $quote)
+    {
+        $this->authorize('like', $quote);
+        
+        auth()->user()->likedQuotes()->toggle($quote->id);
+        
+        return response()->json(['liked' => auth()->user()->likedQuotes()->where('quote_id', $quote->id)->exists()]);
+    }
+
+    /**
+     * Favorite a quote.
+     *
+     * @param  \App\Models\Quote  $quote
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function favorite(Quote $quote)
+    {
+        $this->authorize('favorite', $quote);
+        
+        auth()->user()->favoriteQuotes()->toggle($quote->id);
+        
+        return response()->json(['favorited' => auth()->user()->favoriteQuotes()->where('quote_id', $quote->id)->exists()]);
+    }
+
+    /**
+     * Restore a deleted quote.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function restore($id)
+    {
+        $quote = Quote::withTrashed()->findOrFail($id);
+        
+        $this->authorize('restore', $quote);
+        
+        $quote->restore();
+        
+        return response()->json($quote);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Quote;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class QuotePolicy
 {
@@ -12,7 +13,7 @@ class QuotePolicy
      */
     public function viewAny(?User $user): bool
     {
-        return true; // Anyone can view quotes
+        return true; // Anyone can view quotes (visitor permission)
     }
 
     /**
@@ -20,7 +21,7 @@ class QuotePolicy
      */
     public function view(?User $user, Quote $quote): bool
     {
-        return true; // Anyone can view a quote
+        return true; // Anyone can view a quote (visitor permission)
     }
 
     /**
@@ -28,7 +29,7 @@ class QuotePolicy
      */
     public function create(User $user): bool
     {
-        return true; // Any authenticated user can create quotes
+        return true; // All authenticated users can create quotes
     }
 
     /**
@@ -36,7 +37,7 @@ class QuotePolicy
      */
     public function update(User $user, Quote $quote): bool
     {
-        // Users can update their own quotes, admins and moderators can update any quote
+        // Users can update their own quotes, admins can update any quote
         return $user->id === $quote->user_id || $user->isAdmin();
     }
 
@@ -54,7 +55,7 @@ class QuotePolicy
      */
     public function restore(User $user, Quote $quote): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin(); // Only admins can restore quotes
     }
 
     /**
@@ -62,6 +63,31 @@ class QuotePolicy
      */
     public function forceDelete(User $user, Quote $quote): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin(); // Only admins can permanently delete quotes
+    }
+
+    /**
+     * Determine whether the user can like a quote.
+     */
+    public function like(User $user, Quote $quote): bool
+    {
+        return true; // All authenticated users can like quotes
+    }
+
+    /**
+     * Determine whether the user can favorite a quote.
+     */
+    public function favorite(User $user, Quote $quote): bool
+    {
+        return true; // All authenticated users can favorite quotes
+    }
+
+    /**
+     * Determine whether the user can add tags to a quote.
+     */
+    public function addTags(User $user, Quote $quote): bool
+    {
+        // Users can add tags to their own quotes, admins can add tags to any quote
+        return $user->id === $quote->user_id || $user->isAdmin();
     }
 }

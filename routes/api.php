@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\AdminController;
 
 // User profile route
 Route::get('/user', function (Request $request) {
@@ -32,4 +33,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
     Route::patch('quotes/{quote}', [QuoteController::class, 'update']);
     Route::delete('quotes/{quote}', [QuoteController::class, 'destroy'])->name('quotes.destroy');
+});
+
+// Admin routes
+Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
+    Route::get('/users', [AdminController::class, 'listUsers']);
+    Route::patch('/users/{user}/role', [AdminController::class, 'changeRole']);
+    
+    // Admin quote management routes
+    Route::get('/quotes', [AdminController::class, 'listAllQuotes'])->name('admin.quotes.index');
+    Route::delete('/quotes/{quote}', [AdminController::class, 'deleteQuote'])->name('admin.quotes.delete');
+    Route::post('/quotes/{id}/restore', [AdminController::class, 'restoreQuote'])->name('admin.quotes.restore');
+    Route::get('/quotes/deleted', [AdminController::class, 'listDeletedQuotes'])->name('admin.quotes.deleted');
 });

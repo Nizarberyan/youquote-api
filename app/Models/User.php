@@ -9,13 +9,12 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
@@ -27,7 +26,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -35,26 +34,58 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
-    
+    /**
+     * Check if user is an admin
+     *
+     * @return bool
+     */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
+    /**
+     * Check if user is a moderator
+     *
+     * @return bool
+     */
     public function isModerator(): bool
     {
         return $this->role === 'moderator';
+    }
+
+    /**
+     * Get quotes created by this user
+     */
+    public function quotes()
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    /**
+     * Get quotes liked by this user
+     */
+    public function likedQuotes()
+    {
+        return $this->belongsToMany(Quote::class, 'quote_likes', 'user_id', 'quote_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get quotes favorited by this user
+     */
+    public function favoriteQuotes()
+    {
+        return $this->belongsToMany(Quote::class, 'quote_favorites', 'user_id', 'quote_id')
+            ->withTimestamps();
     }
 }

@@ -16,7 +16,6 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -30,24 +29,24 @@ class AuthController extends Controller
             'password.min' => 'Password must be at least 8 characters',
             'password.confirmed' => 'Password confirmation does not match',
         ]);
-
-        
+    
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        // Create the user
+    
+        // Create the user with default role 'user'
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => 'user', // Default role
         ]);
-
+    
         $token = $user->createToken('auth_token')->plainTextToken;
-
+    
         return response()->json([
             'user' => $user,
             'token' => $token,
