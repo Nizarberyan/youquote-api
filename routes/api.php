@@ -45,4 +45,5 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     Route::delete('/quotes/{quote}', [AdminController::class, 'deleteQuote'])->name('admin.quotes.delete');
     Route::post('/quotes/{id}/restore', [AdminController::class, 'restoreQuote'])->name('admin.quotes.restore');
     Route::get('/quotes/deleted', [AdminController::class, 'listDeletedQuotes'])->name('admin.quotes.deleted');
+    Route::delete('/quotes/{id}/force', [AdminController::class, 'forceDeleteQuote'])->name('admin.quotes.force-delete');
 });

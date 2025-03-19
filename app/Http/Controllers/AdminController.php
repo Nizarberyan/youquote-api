@@ -99,4 +99,33 @@ class AdminController extends Controller
         
         return response()->json(['message' => 'Quote restored successfully', 'quote' => $quote]);
     }
+    
+    /**
+     * Permanently delete a quote (admin only)
+     * 
+     * @param int $id The ID of the quote to force delete
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function forceDeleteQuote($id)
+    {
+        $this->checkAdmin();
+        
+        // Find the quote (including soft-deleted ones)
+        $quote = Quote::withTrashed()->findOrFail($id);
+        
+        // Store some details for the response
+        $quoteDetails = [
+            'id' => $quote->id,
+            'content_preview' => substr($quote->content, 0, 50) . '...',
+            'author' => $quote->author
+        ];
+        
+        // Permanently delete the quote
+        $quote->forceDelete();
+        
+        return response()->json([
+            'message' => 'Quote permanently deleted from the database',
+            'quote' => $quoteDetails
+        ], 200);
+    }
 }
