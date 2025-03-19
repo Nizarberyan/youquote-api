@@ -99,6 +99,14 @@ class AdminController extends Controller
         
         return response()->json(['message' => 'Quote restored successfully', 'quote' => $quote]);
     }
+    public function restoreAllQuotes()
+    {
+        $this->checkAdmin();
+        
+        Quote::onlyTrashed()->restore();
+        
+        return response()->json(['message' => 'All quotes restored successfully']);
+    }
     
     /**
      * Permanently delete a quote (admin only)
@@ -127,5 +135,13 @@ class AdminController extends Controller
             'message' => 'Quote permanently deleted from the database',
             'quote' => $quoteDetails
         ], 200);
+    }
+    public function forceDeleteAllQuotes()
+    {
+        $this->checkAdmin();
+        
+        Quote::onlyTrashed()->forceDelete();
+        
+        return response()->json(['message' => 'All quotes permanently deleted from the database']);
     }
 }
