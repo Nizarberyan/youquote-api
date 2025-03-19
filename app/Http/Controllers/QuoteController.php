@@ -23,6 +23,7 @@ class QuoteController extends Controller
             // Filter by minimum length
             if ($request->has('min_length')) {
                 $minLength = $request->min_length;
+                \Log::info('min_length: ' . $minLength);
                 
                 if (!is_numeric($minLength) || $minLength < 0) {
                     return response()->json(['error' => 'min_length must be a non-negative number'], 400);
@@ -34,6 +35,7 @@ class QuoteController extends Controller
             // Filter by maximum length
             if ($request->has('max_length')) {
                 $maxLength = $request->max_length;
+                \Log::info('max_length: ' . $maxLength);
                 
                 if (!is_numeric($maxLength) || $maxLength < 0) {
                     return response()->json(['error' => 'max_length must be a non-negative number'], 400);
@@ -42,9 +44,12 @@ class QuoteController extends Controller
                 $query->where('length', '<=', $maxLength);
             }
             
+            // Log the final query
+            \Log::info('Final Query: ' . $query->toSql());
+            
             // Add pagination
             $perPage = $request->input('per_page', 15);
-                return response()->json($query->get());
+            return response()->json($query->get());
         
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
