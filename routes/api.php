@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Controllers\AuthorController;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ImageController;
 use App\Http\Controllers\AdminController;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
-use Illuminate\Support\Facades\Hash;
+
 use Illuminate\Auth\Access\AuthorizationException;
 
 // User profile route with email verification status (alternative)
@@ -16,7 +17,7 @@ Route::get('/user', function (Request $request) {
     $user = $request->user();
     $userData = $user->toArray();
     $userData['email_verified'] = $user->hasVerifiedEmail();
-    
+
     return response()->json($userData);
 })->middleware('auth:sanctum');
 
@@ -34,6 +35,8 @@ Route::get('quotes', [QuoteController::class, 'index'])->name('quotes.index');
 Route::get('quotes/random', [QuoteController::class, 'random'])->name('quotes.random');
 Route::get('quotes/popular', [QuoteController::class, 'popular'])->name('quotes.popular');
 Route::get('quotes/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
+Route::get('authors', [AuthorController::class, 'index']);
+Route::get('authors/{authorName}', [AuthorController::class, 'show']);
 
 // Protected Quote routes requiring email verification
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
@@ -42,7 +45,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::put('quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
     Route::patch('quotes/{quote}', [QuoteController::class, 'update']);
     Route::delete('quotes/{quote}', [QuoteController::class, 'destroy'])->name('quotes.destroy');
-    
+
     // Interactions
     Route::post('quotes/{quote}/like', [QuoteController::class, 'like'])->name('quotes.like');
     Route::post('quotes/{quote}/favorite', [QuoteController::class, 'favorite'])->name('quotes.favorite');
@@ -53,7 +56,7 @@ Route::middleware(['auth:sanctum'])->prefix('admin')->group(function () {
     // User management
     Route::get('/users', [AdminController::class, 'listUsers']);
     Route::patch('/users/{user}/role', [AdminController::class, 'changeRole']);
-    
+
     // Admin quote management routes
     Route::get('/quotes', [AdminController::class, 'listAllQuotes'])->name('admin.quotes.index');
     Route::delete('/quotes/{quote}', [AdminController::class, 'deleteQuote'])->name('admin.quotes.delete');
@@ -71,9 +74,9 @@ Route::post('/email/verification-notification', function (Request $request) {
             'message' => 'Email already verified'
         ]);
     }
-    
+
     $request->user()->sendEmailVerificationNotification();
-    
+
     return response()->json([
         'message' => 'Verification link sent'
     ]);
@@ -82,21 +85,21 @@ Route::post('/email/verification-notification', function (Request $request) {
 Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
     try {
         $user = User::findOrFail($id);
-        
+
         if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             throw new AuthorizationException('Invalid verification link');
         }
-        
+
         if ($user->hasVerifiedEmail()) {
             return response()->json([
                 'message' => 'Email already verified'
             ]);
         }
-        
+
         if ($user->markEmailAsVerified()) {
             event(new Verified($user));
         }
-        
+
         return response()->json([
             'message' => 'Email verified successfully'
         ]);

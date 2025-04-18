@@ -29,14 +29,14 @@ class AuthController extends Controller
             'password.min' => 'Password must be at least 8 characters',
             'password.confirmed' => 'Password confirmation does not match',
         ]);
-    
+
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
-    
+
         // Create the user with default role 'user'
         $user = User::create([
             'name' => $request->name,
@@ -44,13 +44,13 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => 'user', // Default role
         ]);
-    
+
         // Generate a token
         $token = $user->createToken('auth_token')->plainTextToken;
-    
+
         // Send verification email
         $user->sendEmailVerificationNotification();
-    
+
         return response()->json([
             'user' => $user,
             'token' => $token,
@@ -73,7 +73,7 @@ class AuthController extends Controller
             'password.required' => 'Please enter your password',
         ]);
 
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
@@ -81,7 +81,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        
+
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
                 'message' => 'Authentication failed',
@@ -97,12 +97,19 @@ class AuthController extends Controller
         // Check if email is verified
         $isVerified = $user->hasVerifiedEmail();
 
+        if ($user->email_verified_at) {
+            return response()->json([
+                'user' => $user,
+                'role' => $user->role,
+                'token' => $token,
+                'email_verified' => $isVerified,
+                'message' => 'Login successful'
+            ], 200);
+        }
+
         return response()->json([
-            'user' => $user,
-            'token' => $token,
-            'email_verified' => $isVerified,
-            'message' => $isVerified ? 'Login successful' : 'Login successful. Please verify your email to access all features.'
-        ]);
+            'message' => 'Please verify your email to access all features.'
+        ], 403);
     }
 
     /**
